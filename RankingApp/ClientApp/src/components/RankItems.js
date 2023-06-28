@@ -1,14 +1,15 @@
 ﻿/* eslint-disable jsx-a11y/alt-text */
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import ItemCollection from './ItemCollection.js';
-import MovieImageArr from "./MovieImages.js";
 import RankingGrid from "./RankingGrid";
 
-const RankItems = () => {
+const RankItems = ({ items, setItems, dataType, imgArr, localStorageKey }) =>
+{
+    const [reload, setReload] = useState(false);
 
-    const [items, setItems] = useState([]);
-    const dataType = 1;
-
+    function Reload() {
+        setReload(true);
+    }
 
     function drag(ev) {
         ev.dataTransfer.setData("text", ev.target.id);
@@ -39,18 +40,40 @@ const RankItems = () => {
     }
 
     useEffect(() => {
+        if (items == null) {
+            getDataFromApi();
+        }
+    }, [dataType])
+
+    function getDataFromApi() {
         fetch(`item/${dataType}`)
             .then((results) => { return results.json(); })
             .then(data => {
                 setItems(data);
             })
-    }, [])
+    }
+
+    useEffect(() => {
+        if (items != null) {
+            localStorage.setItem(localStorageKey, JSON.stringify(items));
+        }
+        setReload(false);
+    }, [items])
+
+    useEffect(() => {
+        if (reload === true) {
+            getDataFromApi();
+        }
+    }, [reload])
 
     return (
-        <main>
-            <RankingGrid items={items} imgArr={MovieImageArr} drag={drag} allowDrop={allowDrop} drop={drop} />
-            <ItemCollection items={items} drag={drag} imgArr={MovieImageArr} />
-        </main>
+        (items != null)
+            ? <main>
+                <RankingGrid items={items} imgArr={imgArr} drag={drag} allowDrop={allowDrop} drop={drop} />
+                <ItemCollection items={items} drag={drag} imgArr={imgArr} />
+                <button onClick={Reload} className="reload" style={{ "marginTop": "10px" }}><span class="text">Reload</span></button>
+              </main>
+            : <main>Loading...</main>
     )
 }
 
